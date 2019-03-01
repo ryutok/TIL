@@ -2,22 +2,22 @@
 
 ## Export files only under git (w/o .git directory)
 
-```
-$ git archive (HEAD,tag) --output=hoge.zip
+```shell
+git archive (HEAD,tag) --output=hoge.zip
 ```
 
 
 ## Export as git repository
 
-```
-$ cd SavedDir
-$ git clone --bare ProjectDir ProjectName.git
+```shell
+cd SavedDir
+git clone --bare ProjectDir ProjectName.git
 ```
 
 
 ## Clone from exported repository
 
-```
-$ cd WorkingDir
-$ git clone SavedDir/ProjectName.git
+```shell
+cd WorkingDir
+git clone SavedDir/ProjectName.git
 ```

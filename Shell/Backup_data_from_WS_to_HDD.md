@@ -1,6 +1,6 @@
 # Backup data from WS to HDD
 
-```
+```shell
 rsync -au --progress --append-verify hostname:backup_dir/ stored_dir/
 ```
 
