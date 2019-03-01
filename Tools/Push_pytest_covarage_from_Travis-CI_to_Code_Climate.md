@@ -1,8 +1,8 @@
 # Push pytest covarage from Travis-CI to Code Climate
 
-## .travis.yml
+### .travis.yml
 
-```
+```yml:.travis.yml
 language: python
 
 env:
@@ -26,8 +26,3 @@ script:
 after_script:
   - ./cc-test-reporter after-build --exit-code $TRAVIS_TEST_RESULT
 ```
-
-
-## Pipenv
-
-When you generate the test environment by `pipenv`, you may not have to
