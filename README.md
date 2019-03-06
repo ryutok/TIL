@@ -5,13 +5,13 @@
 
 ## Categories
 
-- [Apps](#Apps)
-- [Git](#Git)
-- [HTML](#HTML)
-- [Links](#Links)
-- [Shell](#Shell)
-- [Tools](#Tools)
-- [Vim](#Vim)
+- [Apps](#apps)
+- [Git](#git)
+- [HTML](#html)
+- [Links](#links)
+- [Shell](#shell)
+- [Tools](#tools)
+- [Vim](#vim)
 
 
 ## Table of Contents
@@ -34,6 +34,7 @@
 
 - [Computer science links](Links/Computer_science_links.md)
 - [URL of search engines](Links/URL_of_search_engines.md)
+- [Links for Web Design](Links/Web_design_links.md)
 
 ### Shell
 

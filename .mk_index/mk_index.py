@@ -6,6 +6,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Tuple
 
+# Parameters
 SRC_DIR = Path(__file__).parent
 MD_DIR = SRC_DIR / '../'  # Directory the markdown file stored
 DUMP_PATH = SRC_DIR / 'dump.json'  # File path of dump file
@@ -135,7 +136,7 @@ def _make_dir_list(contents: Dict[str, str], n: int = 0) -> str:
     lines = []
     for item in contents.get('directories'):
         path = item.get('path')
-        lines.append('    '*n + '- [' + path + '](#' + path + ')')
+        lines.append('    '*n + '- [' + path + '](#' + path.lower() + ')')
         lines += _make_dir_list(item, n+1)
 
     lines = '\n'.join(lines)
