@@ -1,4 +1,4 @@
-# Push pytest covarage from Travis-CI to Code Climate
+# Push pytest coverage from Travis-CI to Code Climate
 
 ### .travis.yml
 
