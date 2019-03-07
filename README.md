@@ -5,6 +5,7 @@
 
 ## Categories
 
+
 - [Apps](#apps)
 - [Git](#git)
 - [HTML](#html)
@@ -14,7 +15,9 @@
 - [Vim](#vim)
 
 
+
 ## Table of Contents
+
 
 ### Apps
 
