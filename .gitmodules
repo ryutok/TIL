@@ -1,6 +1,3 @@
-[submodule ".mk_indexer"]
-	path = .mk_indexer
-	url = git@gist.github.com:a71788d792361a8b09d19489032a5a43.git
 [submodule ".md_indexer"]
 	path = .md_indexer
-	url = git@gist.github.com:a71788d792361a8b09d19489032a5a43.git
+	url = https://gist.github.com/a71788d792361a8b09d19489032a5a43.git
