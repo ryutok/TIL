@@ -16,7 +16,6 @@
 
 ## Table of Contents
 
-
 ### Apps
 
 - [Terminal key-binds](Apps/Terminal_key-binds.md)
@@ -42,7 +41,7 @@
 
 ### Tools
 
-- [Push pytest covarage from Travis-CI to Code Climate](Tools/Push_pytest_covarage_from_Travis-CI_to_Code_Climate.md)
+- [Push pytest coverage from Travis-CI to Code Climate](Tools/Push_pytest_covarage_from_Travis-CI_to_Code_Climate.md)
 
 ### Vim
 

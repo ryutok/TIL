@@ -5,7 +5,7 @@
 
 ## Categories
 
-<!--#md_indexer directories-->
+<!--#md_indexer categories-->
 
 
 ## Table of Contents

@@ -4,193 +4,142 @@ import json
 import re
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import Any, Dict, List, Tuple, Union
 
 # Parameters
 SRC_DIR = Path(__file__).parent
-MD_DIR = SRC_DIR / '../'  # Directory the markdown file stored
+ROOT_DIR = SRC_DIR / '../'  # Directory the markdown file stored
 DUMP_PATH = SRC_DIR / 'dump.json'  # File path of dump file
 TEMP_PATH = SRC_DIR / 'README_templ.md'  # File path of README template
-OUT_PATH = MD_DIR / 'README.md'  # File path of output
+OUT_PATH = ROOT_DIR / 'README.md'  # File path of output
 EXCEPTION = ['.git', '.mk_index', 'README.md']  # Except files and directories
 
 
-def _scan_dir(dir_path: Path, excpt: List[str])\
-        -> Tuple[List[Path], List[Path]]:
+class FileInfo():
+    def __init__(self, path: Path):
+        if not path.is_file():
+            raise IOError('No such file: {}'.format(path))
+
+        self.path = path
+        h1, h2 = self._get_header()
+        if len(h1) == 1:
+            title = h1[0]
+        else:
+            title = self.path.stem
+        self.title = title
+
+    def _get_header(self) -> Tuple[List[str], List[str]]:
+        h1 = []
+        h2 = []
+        with self.path.open() as f:
+            for line in f:
+                if re.match(r'^(#{1})(?!#)', line):
+                    head = re.sub(r'^(#+)', '', line)
+                    h1.append(head.strip())
+                if re.match(r'^(#{2})(?!#)', line):
+                    head = re.sub(r'^(#+)', '', line)
+                    h2.append(head.strip())
+        return h1, h2
+
+    def dump(self) -> Dict[str, str]:
+        dump_dict: Dict[str, str] = dict()
+        dump_dict['path'] = str(self.path.relative_to(ROOT_DIR))
+        dump_dict['title'] = self.title
+        return dump_dict
+
+
+class DirInfo():
+    def __init__(self, dir_path: Path):
+        if not dir_path.is_dir():
+            raise IOError('No such directory: {}'.format(dir_path))
+
+        self.path = dir_path
+        self._set_info()
+
+    def _set_info(self):
+        dirs = []
+        files = []
+        for item in self.path.glob('*'):
+            if item.name in EXCEPTION:
+                pass
+            elif item.is_dir():
+                dirs.append(item)
+            elif item.is_file() and item.suffix == '.md':
+                files.append(item)
+        dirs.sort()
+        files.sort()
+
+        self.files = [FileInfo(item) for item in files]
+        self.directories = [DirInfo(item) for item in dirs]
+
+    def dump(self) -> Dict[str, Union[str, List[Any]]]:
+        dump_dict: Dict[str, Union[str, List[Any]]] = dict()
+        dump_dict['path'] = str(self.path.relative_to(ROOT_DIR))
+        dump_dict['files'] = [item.dump() for item in self.files]
+        dump_dict['directories'] = [item.dump() for item in self.directories]
+        return dump_dict
+
+    def get_categories(self, n: int = 0) -> List[str]:
+        lines: List[str] = []
+        for item in self.directories:
+            name = item.path.name
+            lines.append('    '*n + '- [' + name + '](#' + name.lower() + ')')
+            lines += item.get_categories(n+1)
+        return lines
+
+    def get_toc(self, n: int = 0) -> List[str]:
+        lines: List[str] = []
+        for item in self.files:
+            path = str(item.path.relative_to(OUT_PATH.parent))
+            lines.append('- [' + item.title + '](' + path + ')')
+        for item in self.directories:
+            lines.append('')
+            lines.append('###' + '#'*n + ' ' + item.path.name)
+            lines.append('')
+            lines += item.get_toc(n+1)
+        if lines[0] == '':
+            lines.pop(0)
+        return lines
+
+
+def make_index(contents: DirInfo):
     """
-    Get directory and file list in the specified directory.
+    Insert categories list and TOC in README file.
     """
 
-    if not dir_path.is_dir():
-        raise IOError('No such directory: {}'.format(dir_path))
-
-    dirs = []
-    files = []
-    for item in dir_path.glob('*'):
-        if item.name in excpt:
-            pass
-        elif item.is_dir():
-            dirs.append(item)
-        elif item.is_file() and item.suffix == '.md':
-            files.append(item)
-
-    dirs.sort()
-    files.sort()
-    return dirs, files
-
-
-def _scan_file(file_path: Path) -> Tuple[List[str], List[str]]:
-    """
-    Get the first and second heads of the specified markdown file.
-    """
-
-    if not file_path.is_file():
-        raise IOError('No such file: {}'.format(file_path))
-
-    h1 = []
-    h2 = []
-    with file_path.open() as f:
+    lines: List[str] = []
+    categories = contents.get_categories()
+    toc = contents.get_toc()
+    with open(TEMP_PATH) as f:
         for line in f:
-            if re.match(r'^(#{1})(?!#)', line):
-                head = re.sub(r'^(#+)', '', line)
-                h1.append(head.strip())
-            if re.match(r'^(#{2})(?!#)', line):
-                head = re.sub(r'^(#+)', '', line)
-                h2.append(head.strip())
-
-    return h1, h2
-
-
-def _get_dir_info(dirs: List[str], parent_dir: Path) -> List[Dict[str, str]]:
-    """
-    Scan files and directories recursively.
-    """
-
-    dir_info = []
-    for suffix in dirs:
-        dump = dict()
-        dump['path'] = suffix
-        dir_path = parent_dir / suffix
-        sub_dirs, sub_files = _scan_dir(dir_path, EXCEPTION)
-        file_info = []
-        for file_path in sub_files:
-            h1, h2 = _scan_file(file_path)
-            if len(h1) == 1:
-                title = h1[0]
-            else:
-                title = file_path.stem
-            file_info.append(
-                    {'path': str(file_path.relative_to(dir_path)),
-                     'title': title,
-                     }
-            )
-        dump['files'] = file_info
-        sub_dirs = [str(path.relative_to(dir_path)) for path in sub_dirs]
-        dump['directories'] = _get_dir_info(sub_dirs, dir_path)
-        dir_info.append(dump)
-    return dir_info
-
-
-def get_info(contents_dir: Path, store_path: Path) -> Dict[str, str]:
-    """
-    Scan directory and dump and restore the data.
-    """
-
-    # Check contents and its updated time
-    if not contents_dir.is_dir():
-        raise IOError('No such directory: {}'.format(contents_dir))
-    # mtimes = [item.stat().st_mtime for item in contents_dir.glob('**')]
-    # update_time = datetime.fromtimestamp(max(mtimes))
-
-    # # Restore dumped file
-    # if store_path.is_file():
-    #     with open(store_path) as f:
-    #         info = json.load(f)
-    #     dump_time = datetime.fromisoformat(info.get('updated_at'))
-    #     if dump_time > update_time:
-    #         return info
-
-    # Get directory informations
-    info = {
-        'contents_path': str(contents_dir.resolve()),
-        'updated_at': datetime.now().isoformat(),
-        'stored_in': str(store_path.resolve())
-    }
-    contents = _get_dir_info(['.'], contents_dir)
-    info['contents'] = contents[0]
-
-    # Dump informations
-    if not store_path.parent.exists():
-        store_path.parent.mkdir()
-    with open(store_path, 'w') as f:
-        json.dump(info, f, indent=4)
-
-    return info
-
-
-def _make_dir_list(contents: Dict[str, str], n: int = 0) -> str:
-    """
-    Return directories list in markdown format.
-    """
-
-    lines = []
-    for item in contents.get('directories'):
-        path = item.get('path')
-        lines.append('    '*n + '- [' + path + '](#' + path.lower() + ')')
-        lines += _make_dir_list(item, n+1)
-
-    lines = '\n'.join(lines)
-    return lines
-
-
-def _make_toc(contents: Dict[str, str], root_path: Path,
-              cont_path: Path = None, n: int = 0) -> str:
-    """
-    Return table of contents in markdown format.
-    """
-
-    if cont_path is None:
-        cont_path = root_path
-    lines = []
-    for item in contents.get('files'):
-        item_path = cont_path / item.get('path')
-        lines.append('- [' + item.get('title') + ']('
-                     + str(item_path.relative_to(root_path)) + ')')
-    for item in contents.get('directories'):
-        lines.append('\n###' + '#'*n + ' ' + item.get('path') + '\n')
-        item_path = cont_path / item.get('path')
-        lines.append(_make_toc(item, root_path, item_path, n+1))
-
-    line = '\n'.join(lines)
-    return line
-
-
-def make_index(info: Dict[str, str], out_path: Path,
-               temp_path: Path) -> None:
-    """
-    Insert directory list and TOC in README file.
-    """
-
-    lines = ''
-    contents = info.get('contents')
-    dirs = _make_dir_list(contents)
-    toc = _make_toc(contents, out_path)
-    with open(temp_path) as f:
-        for line in f:
-            if re.match(r'^(<!--#md_indexer directories)(.*)(-->)', line):
-                lines += dirs + '\n'
+            line = line.rstrip()
+            if re.match(r'^(<!--#md_indexer categories)(.*)(-->)', line):
+                lines += categories
             elif re.match(r'^(<!--#md_indexer toc)(.*)(-->)', line):
-                lines += toc + '\n'
+                lines += toc
             else:
-                lines += line
-    with open(out_path, 'w') as f:
-        for line in lines:
-            f.write(line)
+                lines.append(line)
+    with open(OUT_PATH, 'w') as f:
+        f.write('\n'.join(lines))
 
 
 def main():
-    info = get_info(MD_DIR, DUMP_PATH)
-    make_index(info, OUT_PATH, TEMP_PATH)
+    # Get directory informations
+    info = {
+        'contents_path': str(ROOT_DIR.resolve()),
+        'updated_at': datetime.now().isoformat(),
+    }
+    contents = DirInfo(ROOT_DIR)
+    info['contents'] = contents.dump()
+
+    # Dump informations
+    if not DUMP_PATH.parent.exists():
+        DUMP_PATH.parent.mkdir()
+    with open(DUMP_PATH, 'w') as f:
+        json.dump(info, f, indent=4)
+
+    # Make README file
+    make_index(contents)
 
 
 if __name__ == '__main__':
